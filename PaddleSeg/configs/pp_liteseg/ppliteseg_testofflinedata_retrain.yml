@@ -1,0 +1,108 @@
+batch_size: 2
+epochs: 70
+iters: 980  # (img_count * epochs) / batch_size
+
+train_dataset:
+  type: Dataset
+  dataset_root: /root/old-data/home/roopal/datasets/test_offline_dataset
+  train_path: /root/old-data/home/roopal/datasetprep/test_offline_dataset_prep/train_test.txt
+  num_classes: 2
+  mode: train
+  transforms:
+    - type: RandomAffine
+      translation_offset: 0.1
+      max_rotation: 45.0
+      min_scale_factor: 0.75
+      max_scale_factor: 1.25
+      im_padding_value: 0
+
+    - type: RandomDistort
+      brightness_range: 0.5
+      brightness_prob: 0.5
+      contrast_range: 0.5
+      contrast_prob: 0.5
+      saturation_range: 0.5
+      saturation_prob: 0.5
+      hue_range: 18.0
+      hue_prob: 0.5
+      sharpness_range: 0.5
+      sharpness_prob: 0.5
+
+    - type: RandomHorizontalFlip
+      prob: 0.5
+
+    - type: RandomVerticalFlip
+      prob: 0.5
+
+    - type: RandomBlur
+      prob: 0.1
+
+    - type: RandomNoise
+      prob: 0.5
+
+    - type: Resize
+      target_size: [512, 512]
+
+    - type: Normalize
+      mean: [0,0,0]
+      std: [1,1,1]
+
+
+val_dataset:
+  type: Dataset
+  dataset_root: /root/old-data/home/roopal/datasets/test_offline_dataset
+  val_path: /root/old-data/home/roopal/datasetprep/test_offline_dataset_prep/test_test.txt
+  num_classes: 2
+  mode: val
+  transforms:
+    - type: Resize
+      target_size: [512, 512]
+
+    - type: Normalize
+      mean: [0,0,0]
+      std: [1,1,1]
+
+
+optimizer:
+  type: SGD
+  momentum: 0.9
+  weight_decay: 0.00004
+
+
+lr_scheduler:
+  type: PolynomialDecay
+  learning_rate: 0.01
+  end_lr: 0
+  power: 0.9
+
+
+loss:
+  types:
+    - type: DiceLoss
+      smooth: 1.0e-5
+      weight: [1.0, 20.0]   # background=1, defect=20
+    - type: BCELoss          # no weight, works by default
+    - type: LovaszSoftmaxLoss
+  coef: [1, 1, 1]
+model:
+  type: PPLiteSeg
+  num_classes: 2
+  backbone:
+    type: STDC2
+    pretrained: /root/old-data/home/roopal/PP_STDCNet2/model.pdparams
+
+#save_dir: /root/old-data/home/roopal/output/ppliteseg_retrain_v1
+
+args_dict:
+  device: gpu
+  precision: fp32
+  amp_level: O1
+  save_interval: 50
+  log_iters: 10
+  do_eval: true
+  keep_checkpoint_max: 1
+  num_workers: 0
+  data_format: NCHW
+  resume_model: null
+  use_vdl: true
+
