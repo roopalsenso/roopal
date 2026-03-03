@@ -1,7 +1,7 @@
 import tensorrt as trt
 import os
 
-ENGINE_PATH = "/root/old-data/home/roopal/engines/512_2_cls_talbros/clsfp32.trt"
+ENGINE_PATH = "/root/old-data/home/roopal/engines/anomaly/anomalyint8_backbone.trt"
 
 TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
 
