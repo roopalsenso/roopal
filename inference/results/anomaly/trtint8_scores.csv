@@ -1,0 +1,21 @@
+Image Folder,Image Name,Anomaly Score,Predicted Label
+broken_small,003.png,0.9492,True
+broken_small,002.png,0.9177,True
+broken_small,015.png,0.9089,True
+broken_small,019.png,0.9553,True
+broken_small,004.png,0.9764,True
+broken_small,007.png,0.8703,True
+broken_small,018.png,0.9894,True
+broken_small,006.png,0.9258,True
+broken_small,020.png,0.9697,True
+broken_small,016.png,0.9169,True
+broken_small,014.png,0.8760,True
+broken_small,008.png,0.8782,True
+broken_small,005.png,0.8889,True
+broken_small,017.png,0.9701,True
+broken_small,001.png,0.9172,True
+broken_small,011.png,0.9204,True
+broken_small,000.png,0.8829,True
+broken_small,021.png,0.9644,True
+broken_small,010.png,0.9186,True
+broken_small,012.png,0.9179,True
