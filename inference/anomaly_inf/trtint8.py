@@ -8,10 +8,10 @@ import os
 
 # ================= CONFIG =================
 ENGINE_PATH = "/root/old-data/home/roopal/engines/anomaly/anomalyint8_backbone.trt"
-MEMORY_BANK_PATH = "/root/old-data/home/roopal/models/onnx/patchcore_memory_bank.npy"
+MEMORY_BANK_PATH = "/root/old-data/home/roopal/models/onnx/patchcore_memory_bank_trt.npy"
 METADATA_PATH = "/root/old-data/home/roopal/models/onnx/patchcore_metadata.json"
 
-IMAGE_PATH = "/root/old-data/home/roopal/datasets/MvTecAD/MvTecAD/OnlyOkbottles_test/images/contamination/006.png"
+IMAGE_PATH = "/root/old-data/home/roopal/datasets/MvTecAD/MvTecAD/OnlyOkbottles_test/images/broken_large/004.png"
 SAVE_DIR = "/root/old-data/home/roopal/inference/results/anomaly/int8trt_calib"
 
 INPUT_H = 224
