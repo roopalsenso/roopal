@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
-
-CONFIG_FILE=/root/old-data/home/roopal/opencv_qt/opencv_build_config.txt
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/opencv_build_config.txt"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "ERROR: Config file not found: $CONFIG_FILE"
@@ -11,8 +11,13 @@ fi
 # Load configuration
 source "$CONFIG_FILE"
 
-OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-/root/opencv_build/opencv_build/opencv}
+# Set OpenCV source path
+OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv_build/opencv}
 OPENCV_EXTRA_MODULES_PATH=${OPENCV_CONTRIB_PATH:-""}
+
+# Set install and build directories
+INSTALL_DIR=${INSTALL_DIR:-$HOME/opencv_build/install_opencv}
+BUILD_DIR="${OPENCV_SOURCE_DIR}/build_test"
 
 # Collect all BUILD_opencv_* flags from config
 MODULE_FLAGS=()
@@ -25,7 +30,7 @@ done < "$CONFIG_FILE"
 # Generate CMake command
 CMAKE_CMD="cmake \
 -D CMAKE_BUILD_TYPE=Release \
--D CMAKE_INSTALL_PREFIX=/usr/local \
+-D CMAKE_INSTALL_PREFIX=\"$INSTALL_DIR\" \
 -D CMAKE_CXX_FLAGS=\"$CMAKE_CXX_FLAGS\" \
 -D WITH_CUDA=$CUDA_FOUND \
 -D CUDA_ARCH_BIN=\"$CUDA_ARCH_BIN\" \
@@ -74,7 +79,11 @@ done
 # Append source directory
 CMAKE_CMD="$CMAKE_CMD \"$OPENCV_SOURCE_DIR\""
 
-# Print
+# Print directories for reference
+echo "Build directory: $BUILD_DIR"
+echo "Install directory: $INSTALL_DIR"
+
+# Print CMake command
 echo "================================="
 echo "Generated CMake Command"
 echo "================================="

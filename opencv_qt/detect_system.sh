@@ -1,14 +1,12 @@
 #!/bin/bash
-
 set -e
 
 echo "================================="
 echo " OpenCV Full System Capability Check"
 echo "================================="
-
-CONFIG_FILE=/root/old-data/home/roopal/opencv_qt/opencv_build_config.txt
-INSTALL_SCRIPT=/root/old-data/home/roopal/opencv_qt/install_missing_dependencies.sh
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/opencv_build_config.txt"
+INSTALL_SCRIPT="$SCRIPT_DIR/install_missing_dependencies.sh"
 rm -f $CONFIG_FILE $INSTALL_SCRIPT
 
 echo "Collecting system configuration..."
@@ -138,8 +136,9 @@ elif [ -f "$CUDA_TOOLKIT_ROOT_DIR/lib64/libcudnn.so" ]; then
 else
     CUDNN_FOUND=OFF
     echo "WARNING: cuDNN not detected"
+    # Only append if missing
     if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
-    echo "echo 'Install cuDNN manually or ensure .so files exist in cuda_package'" >> $INSTALL_SCRIPT
+    echo "dpkg -s libcudnn || echo 'sudo install cuDNN manually or ensure .so files exist in cuda_package'" >> $INSTALL_SCRIPT
 fi
 echo "CUDNN_FOUND=$CUDNN_FOUND" >> $CONFIG_FILE
 echo "CUDNN_LIBRARY=$CUDNN_LIBRARY" >> $CONFIG_FILE
@@ -159,19 +158,22 @@ if [ -n "$TENSORRT_PATH" ]; then
     echo "TENSORRT_ROOT=$TENSORRT_ROOT" >> $CONFIG_FILE
 else
     echo "TENSORRT_FOUND=OFF" >> $CONFIG_FILE
-    echo "echo 'Install TensorRT manually from NVIDIA site'" >> $INSTALL_SCRIPT
+    # Only append if missing
+    if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
+    echo "dpkg -s nvinfer || echo 'Install TensorRT manually from NVIDIA site'" >> $INSTALL_SCRIPT
 fi
 
 ########################################
-# OpenMP
+# Helper function to append missing package only if not installed
 ########################################
-echo ""
-echo "Checking OpenMP..."
-if g++ -fopenmp -dM -E - < /dev/null | grep -q _OPENMP; then
-    echo "WITH_OPENMP=ON" >> $CONFIG_FILE
-else
-    echo "WITH_OPENMP=OFF" >> $CONFIG_FILE
-fi
+add_missing_pkg() {
+    local pkg="$1"
+    local install_cmd="$2"
+    if ! dpkg -s "$pkg" &> /dev/null; then
+        if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
+        echo "$install_cmd" >> $INSTALL_SCRIPT
+    fi
+}
 
 ########################################
 # Media libraries
@@ -182,18 +184,18 @@ check_lib () {
     else
         echo "$2=OFF" >> $CONFIG_FILE
         case $1 in
-            gstreamer-1.0) apt_pkg="libgstreamer1.0-dev" ;;
-            opencl) apt_pkg="ocl-icd-opencl-dev" ;;
-            eigen3) apt_pkg="libeigen3-dev" ;;
-            tbb) apt_pkg="libtbb-dev" ;;
-            Qt5Core) apt_pkg="qtbase5-dev" ;;
-            libavcodec) apt_pkg="libavcodec-dev" ;;
-            protobuf) apt_pkg="protobuf-compiler libprotobuf-dev" ;;
-            *) apt_pkg=$1 ;;
+            gstreamer-1.0) add_missing_pkg libgstreamer1.0-dev "sudo apt install libgstreamer1.0-dev" ;;
+            opencl) add_missing_pkg ocl-icd-opencl-dev "sudo apt install ocl-icd-opencl-dev" ;;
+            eigen3) add_missing_pkg libeigen3-dev "sudo apt install libeigen3-dev" ;;
+            tbb) add_missing_pkg libtbb-dev "sudo apt install libtbb-dev" ;;
+            Qt5Core) add_missing_pkg qtbase5-dev "sudo apt install qtbase5-dev" ;;
+            libavcodec) add_missing_pkg libavcodec-dev "sudo apt install libavcodec-dev" ;;
+            protobuf) add_missing_pkg libprotobuf-dev "sudo apt install libprotobuf-dev protobuf-compiler" ;;
+            *) add_missing_pkg "$1" "sudo apt install $1" ;;
         esac
-        echo "echo 'sudo apt install $apt_pkg' >> $INSTALL_SCRIPT" >> $INSTALL_SCRIPT
     fi
 }
+
 echo ""
 echo "Checking media libraries..."
 check_lib gstreamer-1.0 WITH_GSTREAMER
@@ -206,17 +208,19 @@ check_lib opencl WITH_OPENCL
 ########################################
 # Additional libraries
 ########################################
-echo ""
-echo "Checking additional libraries..."
 ld_lib_check() {
-    if ldconfig -p | grep -i $1 > /dev/null; then echo "$2=ON" >> $CONFIG_FILE; else echo "$2=OFF" >> $CONFIG_FILE; fi
+    if ldconfig -p | grep -i $1 > /dev/null; then
+        echo "$2=ON" >> $CONFIG_FILE
+    else
+        echo "$2=OFF" >> $CONFIG_FILE
+    fi
 }
+
 ld_lib_check libGL.so WITH_OPENGL
 ld_lib_check lapack WITH_LAPACK
 
 ########################################
-# -------------------------------
-# EARLY PROTOBUF DETECTION (ensures DNN ON)
+# Protobuf for DNN
 ########################################
 PROTOBUF_HEADERS="/usr/include/google/protobuf/message.h"
 if [ -f "$PROTOBUF_HEADERS" ] && command -v protoc &> /dev/null; then
@@ -227,8 +231,7 @@ else
     WITH_PROTOBUF=OFF
     echo "WITH_PROTOBUF=OFF" >> $CONFIG_FILE
     BUILD_DNN=OFF
-    if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
-    echo "echo 'sudo apt install libprotobuf-dev protobuf-compiler' >> $INSTALL_SCRIPT" >> $INSTALL_SCRIPT
+    add_missing_pkg libprotobuf-dev "sudo apt install libprotobuf-dev protobuf-compiler"
 fi
 
 ########################################
@@ -236,16 +239,14 @@ fi
 ########################################
 ld_lib_check cublas WITH_CUBLAS
 ld_lib_check cufft WITH_CUFFT
-
-# IPP / V4L
 ld_lib_check ipp WITH_IPP
 ld_lib_check v4l2 WITH_V4L
 
 ########################################
-# Detect OpenCV contrib modules dynamically
+# Detect OpenCV contrib modules
 ########################################
 echo ""
-CONTRIB_PATH=/root/opencv_build/opencv_build/opencv_contrib/modules
+CONTRIB_PATH=${OPENCV_CONTRIB_DIR:-/root/opencv_build/opencv_build/opencv_contrib}/modules
 echo "Checking OpenCV contrib modules..."
 
 if [ -d "$CONTRIB_PATH" ]; then
@@ -260,8 +261,7 @@ if [ -d "$CONTRIB_PATH" ]; then
                     echo "BUILD_opencv_$mod=ON" >> $CONFIG_FILE
                 else
                     echo "BUILD_opencv_$mod=OFF" >> $CONFIG_FILE
-                    if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
-                    echo "echo 'Install $dep for $mod module' >> $INSTALL_SCRIPT" >> $INSTALL_SCRIPT
+                    add_missing_pkg "$dep" "sudo apt install $dep"
                 fi
             else
                 echo "BUILD_opencv_$mod=ON" >> $CONFIG_FILE
@@ -295,7 +295,7 @@ if [ -d "$CONTRIB_PATH" ]; then
     detect_module line_descriptor ""
     detect_module phase_unwrapping ""
 
-    # DNN module (force ON if early detection succeeded)
+    # DNN module
     if [ "$BUILD_DNN" == "ON" ]; then
         echo "BUILD_opencv_dnn=ON" >> $CONFIG_FILE
     else
@@ -311,7 +311,7 @@ if [ -d "$CONTRIB_PATH" ]; then
                     echo "BUILD_opencv_$m=ON" >> $CONFIG_FILE
                 else
                     echo "BUILD_opencv_$m=OFF" >> $CONFIG_FILE
-                    echo "echo 'Install nvcuvid / FFmpeg with CUDA support' >> $INSTALL_SCRIPT" >> $INSTALL_SCRIPT
+                    add_missing_pkg nvcuvid "sudo apt install nvcuvid / FFmpeg with CUDA support"
                 fi
             else
                 echo "BUILD_opencv_$m=ON" >> $CONFIG_FILE
