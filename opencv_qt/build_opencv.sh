@@ -12,8 +12,8 @@ fi
 # Load configuration for build/install directories
 source "$CONFIG_FILE"
 
-OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv_build/opencv}
-INSTALL_DIR=${INSTALL_DIR:-$HOME/opencv_build/install_opencv}
+OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv4.9/opencv}
+INSTALL_DIR=${INSTALL_DIR:-$HOME/opencv_build/install_opencv4.9}
 BUILD_DIR="${OPENCV_SOURCE_DIR}/build_test"
 
 # Ensure build directory exists and is clean

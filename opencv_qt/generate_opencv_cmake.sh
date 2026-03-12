@@ -12,11 +12,11 @@ fi
 source "$CONFIG_FILE"
 
 # Set OpenCV source path
-OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv_build/opencv}
+OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv4.9/opencv}
 OPENCV_EXTRA_MODULES_PATH=${OPENCV_CONTRIB_PATH:-""}
 
 # Set install and build directories
-INSTALL_DIR=${INSTALL_DIR:-$HOME/opencv_build/install_opencv}
+INSTALL_DIR=${INSTALL_DIR:-$HOME/opencv_build/install_opencv4.9}
 BUILD_DIR="${OPENCV_SOURCE_DIR}/build_test"
 
 # Collect all BUILD_opencv_* flags from config
@@ -26,7 +26,8 @@ while read -r line; do
         MODULE_FLAGS+=("$line")
     fi
 done < "$CONFIG_FILE"
-
+# TensorRT settings
+export LD_LIBRARY_PATH="$TENSORRT_LIBRARY_DIR:$LD_LIBRARY_PATH"
 # Generate CMake command
 CMAKE_CMD="cmake \
 -D CMAKE_BUILD_TYPE=Release \
@@ -38,9 +39,14 @@ CMAKE_CMD="cmake \
 -D ENABLE_FAST_MATH=1 \
 -D OPENCV_DNN_CUDA=$CUDA_FOUND \
 -D WITH_CUDNN=$CUDNN_FOUND \
--D WITH_TENSORRT=$TENSORRT_FOUND \
+-D OPENCV_DNN_TENSORRT=$TENSORRT_FOUND \
 -D TensorRT_LIBRARY_DIR=\"$TENSORRT_LIBRARY_DIR\" \
 -D TensorRT_ROOT=\"$TENSORRT_ROOT\" \
+-D TensorRT_INCLUDE_DIR="$TENSORRT_INCLUDE_DIR" \
+-D TensorRT_LIBRARY="$TENSORRT_LIBRARY_DIR/libnvinfer.so" \
+-D TensorRT_LIBRARY_PLUGIN="$TENSORRT_LIBRARY_DIR/libnvinfer_plugin.so" \
+-D TensorRT_LIBRARY_PARSERS=/root/old-data/home/roopal/TensorRT-8.6.1.6/targets/x86_64-linux-gnu/lib/libnvparsers.so \
+-D TensorRT_LIBRARY_ONNXPARSER="/root/old-data/home/roopal/TensorRT-8.6.1.6/targets/x86_64-linux-gnu/lib/libnvonnxparser.so" \
 -D WITH_CUBLAS=$WITH_CUBLAS \
 -D WITH_CUFFT=$WITH_CUFFT \
 -D WITH_OPENMP=$WITH_OPENMP \

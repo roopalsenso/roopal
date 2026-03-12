@@ -149,20 +149,41 @@ echo "CUDNN_INCLUDE_DIR=$CUDNN_INCLUDE_DIR" >> $CONFIG_FILE
 ########################################
 echo ""
 echo "Checking TensorRT..."
-TENSORRT_PATH=$(find / -type f -name "libnvinfer.so*" 2>/dev/null | grep -v docker | head -n1)
+
+TENSORRT_PATH=$(find /usr /root -type f -name "libnvinfer.so*" 2>/dev/null | grep -v docker | head -n1)
+
 if [ -n "$TENSORRT_PATH" ]; then
     TENSORRT_LIBRARY_DIR=$(dirname "$TENSORRT_PATH")
-    TENSORRT_ROOT=$(dirname "$(dirname "$TENSORRT_LIBRARY_DIR")")
+
+    # Correct TensorRT root detection for NVIDIA layout
+    if [[ "$TENSORRT_LIBRARY_DIR" == *"targets/x86_64-linux-gnu/lib"* ]]; then
+        TENSORRT_ROOT=$(dirname "$(dirname "$(dirname "$TENSORRT_LIBRARY_DIR")")")
+    else
+        TENSORRT_ROOT=$(dirname "$(dirname "$TENSORRT_LIBRARY_DIR")")
+    fi
+
+    # TensorRT include directory
+    if [ -d "$TENSORRT_ROOT/include" ]; then
+        TENSORRT_INCLUDE_DIR="$TENSORRT_ROOT/include"
+    else
+        TENSORRT_INCLUDE_DIR=""
+        echo "WARNING: TensorRT headers not found!"
+    fi
+
+    echo "TensorRT detected at: $TENSORRT_ROOT"
+
     echo "TENSORRT_FOUND=ON" >> $CONFIG_FILE
     echo "TENSORRT_LIBRARY_DIR=$TENSORRT_LIBRARY_DIR" >> $CONFIG_FILE
     echo "TENSORRT_ROOT=$TENSORRT_ROOT" >> $CONFIG_FILE
+    echo "TENSORRT_INCLUDE_DIR=$TENSORRT_INCLUDE_DIR" >> $CONFIG_FILE
+
 else
+    echo "TensorRT not detected"
     echo "TENSORRT_FOUND=OFF" >> $CONFIG_FILE
-    # Only append if missing
+
     if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
     echo "dpkg -s nvinfer || echo 'Install TensorRT manually from NVIDIA site'" >> $INSTALL_SCRIPT
 fi
-
 ########################################
 # Helper function to append missing package only if not installed
 ########################################
@@ -246,7 +267,7 @@ ld_lib_check v4l2 WITH_V4L
 # Detect OpenCV contrib modules
 ########################################
 echo ""
-CONTRIB_PATH=${OPENCV_CONTRIB_DIR:-/root/opencv_build/opencv_build/opencv_contrib}/modules
+CONTRIB_PATH=${OPENCV_CONTRIB_DIR:-/root/opencv_build/opencv4.9/opencv_contrib}/modules
 echo "Checking OpenCV contrib modules..."
 
 if [ -d "$CONTRIB_PATH" ]; then
