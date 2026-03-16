@@ -96,23 +96,19 @@ fi
 ########################################
 # CUDA
 ########################################
-echo ""
-echo "Checking CUDA..."
-if [ -d "/usr/local/cuda" ]; then
-    CUDA_TOOLKIT_ROOT_DIR="/usr/local/cuda"
-elif [ -d "/root/cuda_package" ]; then
-    CUDA_TOOLKIT_ROOT_DIR="/root/cuda_package"
-elif command -v nvcc &> /dev/null; then
-    CUDA_TOOLKIT_ROOT_DIR=$(dirname $(dirname $(which nvcc)))
-else
-    CUDA_TOOLKIT_ROOT_DIR=""
-fi
-if [ -n "$CUDA_TOOLKIT_ROOT_DIR" ]; then
+########################################
+# CUDA 11.8 FORCED
+########################################
+CUDA_TOOLKIT_ROOT_DIR="/usr/local/cuda-11.8"
+if [ -d "$CUDA_TOOLKIT_ROOT_DIR" ]; then
     echo "CUDA_FOUND=ON" >> $CONFIG_FILE
     echo "CUDA_TOOLKIT_ROOT_DIR=$CUDA_TOOLKIT_ROOT_DIR" >> $CONFIG_FILE
+    # Use 7.5 for your Tesla T4
+    echo "CUDA_ARCH_BIN=7.5" >> $CONFIG_FILE
+    echo "CUDA_ARCH_PTX=7.5" >> $CONFIG_FILE
 else
-    echo "CUDA_FOUND=OFF" >> $CONFIG_FILE
-    echo "WARNING: CUDA toolkit not found"
+    echo "ERROR: CUDA 11.8 not found!"
+    exit 1
 fi
 
 ########################################
@@ -140,10 +136,9 @@ else
     if [ ! -f "$INSTALL_SCRIPT" ]; then touch $INSTALL_SCRIPT; fi
     echo "dpkg -s libcudnn || echo 'sudo install cuDNN manually or ensure .so files exist in cuda_package'" >> $INSTALL_SCRIPT
 fi
-echo "CUDNN_FOUND=$CUDNN_FOUND" >> $CONFIG_FILE
-echo "CUDNN_LIBRARY=$CUDNN_LIBRARY" >> $CONFIG_FILE
-echo "CUDNN_INCLUDE_DIR=$CUDNN_INCLUDE_DIR" >> $CONFIG_FILE
-
+echo "CUDNN_FOUND=ON" >> $CONFIG_FILE
+echo "CUDNN_LIBRARY=$CUDNN_HOME/lib/libcudnn.so" >> $CONFIG_FILE
+echo "CUDNN_INCLUDE_DIR=$CUDNN_HOME/include" >> $CONFIG_FILE
 ########################################
 # TensorRT
 ########################################

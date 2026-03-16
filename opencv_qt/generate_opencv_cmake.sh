@@ -12,11 +12,11 @@ fi
 source "$CONFIG_FILE"
 
 # Set OpenCV source path
-OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv4.9/opencv}
+OPENCV_SOURCE_DIR=${OPENCV_SOURCE_DIR:-$HOME/opencv_build/opencv_build/opencv}
 OPENCV_EXTRA_MODULES_PATH=${OPENCV_CONTRIB_PATH:-""}
 
 # Set install and build directories
-INSTALL_DIR=${INSTALL_DIR:-$HOME/opencv_build/install_opencv4.9}
+INSTALL_DIR="/opt/opencv4.6"
 BUILD_DIR="${OPENCV_SOURCE_DIR}/build_test"
 
 # Collect all BUILD_opencv_* flags from config
